@@ -17,18 +17,18 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 
-class StatusWindow extends JFrame {
+class OffFocusWindow extends JFrame {
 
-	private static final long serialVersionUID = 1L;
-	public JLabel label;
+	public JLabel activeLabel;
 
-	public StatusWindow() {
-		setSize(250, 250);
-		label = new JLabel();
-		label.setText("test");
-		add(label);
-
+	public OffFocusWindow() {
+		setSize(55, 25);
+		setUndecorated(true);
+		setAlwaysOnTop(true);
 		setVisible(true);
+
+		activeLabel = new JLabel("");
+		add(activeLabel);
 	}
 }
 
@@ -40,7 +40,6 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 	private static final int KEY_LEFT = 57419;
 	private static final int KEY_R_SHIFT = 3638;
 
-	StatusWindow w;
 	boolean active = false;
 	boolean cancelNextKey = false;
 	boolean ctrlWasPressed = false;
@@ -55,9 +54,16 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 
 	boolean mouse1 = false;
 	boolean mouse2 = false;
+	boolean arrows = false;
+
+	JFrame frame;
 
 	Timer timer;
 	Robot robot;
+
+	OffFocusWindow ofw;
+
+	double addSpeed = 0;
 
 	public MouseKeyboardController() {
 		try {
@@ -71,10 +77,10 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 			out.println(e.getMessage());
 		}
 
-		w = new StatusWindow();
-
 		timer = new Timer(5, this);
 		timer.start();
+
+		ofw = new OffFocusWindow();
 	}
 
 	public static void main(String args[]) {
@@ -94,10 +100,18 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 				return;
 			}
 
-			if (nke.getKeyCode() != 56)
+			int keycode = nke.getKeyCode();
+
+			if (keycode != 56)
 				ctrlWasPressed = false;
 
-			switch (nke.getKeyCode()) {
+			if (keycode != KEY_LEFT && keycode != KEY_RIGHT && keycode != KEY_UP
+					&& keycode != KEY_DOWN) {
+				arrows = false;
+			}
+			int x = MouseInfo.getPointerInfo().getLocation().x;
+			int y = MouseInfo.getPointerInfo().getLocation().y;
+			switch (keycode) {
 
 			case KEY_R_SHIFT:
 				rightShiftPressed = true;
@@ -116,13 +130,12 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 					robot.mousePress(InputEvent.BUTTON3_DOWN_MASK);
 					mouse2 = true;
 				}
-
 				break;
 
 			case 56:
 				if (control) {
 					active = !active;
-					w.label.setText(active + "");
+					ofw.activeLabel.setText(active + "");
 				}
 				break;
 
@@ -136,9 +149,14 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 				left = true;
 				if (mouse1)
 					return;
+
 				cancelNextKey = true;
 				robot.keyPress(KeyEvent.VK_RIGHT);
 				robot.keyRelease(KeyEvent.VK_RIGHT);
+				if (!arrows) {
+					ofw.toFront();
+				}
+				arrows = true;
 				break;
 
 			case KEY_RIGHT:
@@ -147,9 +165,14 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 				right = true;
 				if (mouse1)
 					return;
+
 				cancelNextKey = true;
 				robot.keyPress(KeyEvent.VK_LEFT);
 				robot.keyRelease(KeyEvent.VK_LEFT);
+				if (!arrows) {
+					ofw.toFront();
+				}
+				arrows = true;
 				break;
 
 			case KEY_DOWN:
@@ -158,9 +181,14 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 				down = true;
 				if (mouse1)
 					return;
+
 				cancelNextKey = true;
 				robot.keyPress(KeyEvent.VK_UP);
 				robot.keyRelease(KeyEvent.VK_UP);
+				if (!arrows) {
+					ofw.toFront();
+				}
+				arrows = true;
 				break;
 
 			case KEY_UP:
@@ -169,9 +197,14 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 				up = true;
 				if (mouse1)
 					return;
+
 				cancelNextKey = true;
 				robot.keyPress(KeyEvent.VK_DOWN);
 				robot.keyRelease(KeyEvent.VK_DOWN);
+				if (!arrows) {
+					ofw.toFront();
+				}
+				arrows = true;
 				break;
 			}
 
@@ -213,27 +246,41 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 	public void actionPerformed(ActionEvent e) {
 		try {
 			if (active) {
-				int speed = (10 * (shiftPressed ? 4 : 1)) + (10 * (rightShiftPressed ? 5 : 0));
+
+				boolean holding = false;
+
+				int speed = (12 * (shiftPressed ? 4 : 0)) + (10 * (rightShiftPressed ? 5 : 0))
+						+ (1 * (int) (addSpeed * 5));
 				int x = MouseInfo.getPointerInfo().getLocation().x;
 				int y = MouseInfo.getPointerInfo().getLocation().y;
 				if (left) {
+					holding = true;
 					robot.mouseMove(x - speed, y);
 					x = MouseInfo.getPointerInfo().getLocation().x;
 					y = MouseInfo.getPointerInfo().getLocation().y;
 				}
 				if (right) {
+					holding = true;
 					robot.mouseMove(x + speed, y);
 					x = MouseInfo.getPointerInfo().getLocation().x;
 					y = MouseInfo.getPointerInfo().getLocation().y;
 				}
 				if (up) {
+					holding = true;
 					robot.mouseMove(x, y - speed);
 					x = MouseInfo.getPointerInfo().getLocation().x;
 					y = MouseInfo.getPointerInfo().getLocation().y;
 				}
 				if (down) {
+					holding = true;
 					robot.mouseMove(x, y + speed);
 				}
+				if (holding) {
+					addSpeed += 0.1;
+				} else {
+					addSpeed = 0.5;
+				}
+
 			}
 		} catch (Exception e1) {
 			out.println(e1.getMessage());
