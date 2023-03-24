@@ -1,5 +1,7 @@
 import static java.lang.System.out;
 
+import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.MouseInfo;
 import java.awt.Robot;
 import java.awt.event.ActionEvent;
@@ -11,25 +13,47 @@ import java.util.logging.Logger;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.Timer;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 
+class PaintPanel extends JPanel {
+
+	public PaintPanel() {
+		setBounds(0, 0, 300, 200);
+		setBackground(Color.red);
+		this.setLayout(null);
+	}
+
+	@Override
+	public void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		g.fillRect(0, 0, this.WIDTH, this.HEIGHT);
+	}
+
+}
+
 class OffFocusWindow extends JFrame {
 
 	public JLabel activeLabel;
+	public PaintPanel panel;
 
 	public OffFocusWindow() {
 		setSize(55, 25);
 		setUndecorated(true);
 		setAlwaysOnTop(true);
 		setVisible(true);
-
 		activeLabel = new JLabel("");
+
+		panel = new PaintPanel();
+		add(panel);
+
 		add(activeLabel);
 	}
+
 }
 
 public class MouseKeyboardController implements NativeKeyListener, ActionListener {
@@ -109,8 +133,6 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 					&& keycode != KEY_DOWN) {
 				arrows = false;
 			}
-			int x = MouseInfo.getPointerInfo().getLocation().x;
-			int y = MouseInfo.getPointerInfo().getLocation().y;
 			switch (keycode) {
 
 			case KEY_R_SHIFT:
@@ -129,13 +151,14 @@ public class MouseKeyboardController implements NativeKeyListener, ActionListene
 				} else {
 					robot.mousePress(InputEvent.BUTTON3_DOWN_MASK);
 					mouse2 = true;
-				}
+				} // test ä ö
 				break;
 
 			case 56:
 				if (control) {
 					active = !active;
 					ofw.activeLabel.setText(active + "");
+					ofw.panel.setBackground((active) ? Color.green : Color.red);
 				}
 				break;
 
