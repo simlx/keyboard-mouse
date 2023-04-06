@@ -52,6 +52,8 @@ class OffFocusWindow extends JFrame {
 		add(panel);
 
 		add(activeLabel);
+
+		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 	}
 
 }
